@@ -3,6 +3,7 @@ users:
   - name: belamine
     sudo: ALL=(ALL) ALL
     shell: /bin/bash
+    lock_passwd: false
     passwd: ${password_hash}
     ssh_authorized_keys:
       - ${ssh_public_key}

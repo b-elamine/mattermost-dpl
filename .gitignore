@@ -2,4 +2,5 @@
 .terraform/
 *.tfstate
 *.tfstate.backup
+vm-images/
 PLAN.md

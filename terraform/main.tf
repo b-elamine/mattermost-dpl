@@ -1,6 +1,14 @@
+resource "libvirt_pool" "mattermost" {
+  name = "mattermost-dpl"
+  type = "dir"
+  target = {
+    path = "/home/belamine/Desktop/Work/projects/mattermost-dpl/vm-images"
+  }
+}
+
 resource "libvirt_volume" "ubuntu_base" {
   name = "ubuntu-24.04-base.qcow2"
-  pool = "default"
+  pool = libvirt_pool.mattermost.name
   create = {
     content = {
       url = "https://cloud-images.ubuntu.com/noble/current/noble-server-cloudimg-amd64.img"
@@ -10,12 +18,17 @@ resource "libvirt_volume" "ubuntu_base" {
     format = {
       type = "qcow2"
     }
+    permissions = {
+      owner = "64055"
+      group = "109"
+      mode = "0640"
+    }
   }
 }
 
 resource "libvirt_volume" "mattermost_vm_disk" {
     name = "mattermost-vm.qcow2"
-    pool = "default"
+    pool = libvirt_pool.mattermost.name
     capacity = 20*1024*1024*1024
     backing_store = {
       path = libvirt_volume.ubuntu_base.path  
@@ -26,6 +39,11 @@ resource "libvirt_volume" "mattermost_vm_disk" {
     target = {
       format = {
         type = "qcow2"
+      }
+      permissions = {
+        owner = "64055"
+        group = "109"
+        mode = "0640"
       }
     }
 }
@@ -44,10 +62,17 @@ resource "libvirt_cloudinit_disk" "mattermost_cloudinit" {
 
 resource "libvirt_volume" "cloudinit_vol" {
   name = "mattermost-cloudinit-vol.iso"
-  pool = "default"
+  pool = libvirt_pool.mattermost.name
   create = {
     content = {
       url = libvirt_cloudinit_disk.mattermost_cloudinit.path
+    }
+  }
+  target = {
+    permissions = {
+      owner = "64055"
+      group = "109"
+      mode = "0640"
     }
   }
 }
@@ -69,9 +94,13 @@ resource "libvirt_domain" "mattermost_vm" {
   devices = {
     disks = [
       {
+        driver = {
+            name = "qemu"
+            type = "qcow2"
+        }
         source = {
           volume = {
-            pool   = "default"
+            pool   = libvirt_pool.mattermost.name
             volume = libvirt_volume.mattermost_vm_disk.name
           }
         }
@@ -84,13 +113,13 @@ resource "libvirt_domain" "mattermost_vm" {
         device = "cdrom"
         source = {
           volume = {
-            pool   = "default"
+            pool   = libvirt_pool.mattermost.name
             volume = libvirt_volume.cloudinit_vol.name
           }
         }
         target = {
-          dev = "vdb"
-          bus = "virtio"
+          dev = "sdb"
+          bus = "sata"
         }
       }
     ]
@@ -107,4 +136,5 @@ resource "libvirt_domain" "mattermost_vm" {
       }
     ]
   }
+  running = true
 }
