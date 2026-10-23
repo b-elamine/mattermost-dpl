@@ -46,7 +46,7 @@
         append: true
     - name: Copy the compose folder
       copy:
-        src: /home/belamine/Desktop/Work/projects/mattermost-dpl/compose/
+        src: /home/belamine/Desktop/Work/projects/mattermost-dpl/dpl-small/compose/
         dest: /home/belamine/compose/
         mode: preserve
 
@@ -57,7 +57,7 @@
 
     - name: Copy the backup script
       copy:
-        src: /home/belamine/Desktop/Work/projects/mattermost-dpl/scripts/backup.sh
+        src: /home/belamine/Desktop/Work/projects/mattermost-dpl/dpl-small/scripts/backup.sh
         dest: /home/belamine/backup.sh
         mode: "0755"
 
