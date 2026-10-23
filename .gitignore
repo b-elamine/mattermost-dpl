@@ -3,7 +3,9 @@
 *.tfstate
 *.tfstate.backup
 vm-images/
+vm-images-medium/
 .env
 compose/cert/
 privkey.pem
 PLAN.md
+dpl-medium/NOTES.md
