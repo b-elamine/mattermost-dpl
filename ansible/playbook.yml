@@ -1,0 +1,77 @@
+- name: Deploy Mattermost
+  hosts: mattermost
+  become: true
+
+  tasks:
+    - name: Install Docker dependencies
+      apt:
+        name:
+          - ca-certificates
+          - curl
+        state: present
+        update_cache: true
+    
+    - name: create api keys folder
+      file:
+        path: /etc/apt/keyrings
+        state: directory
+        mode: "0755"
+    - name: Download Docker's GPG key
+      get_url:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        dest: /etc/apt/keyrings/docker.asc
+        mode: "0644"
+    - name: Get the Debian-style architecture name
+      command: dpkg --print-architecture
+      register: dpkg_arch
+      changed_when: false
+    - name: Add the official Docker repository
+      apt_repository:
+        repo: "deb [arch={{ dpkg_arch.stdout }} signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
+        state: present
+        filename: docker
+    - name: install docker
+      apt:
+        name:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io 
+          - docker-compose-plugin
+        state: present
+        update_cache: true
+    - name: add user to docker group
+      user:
+        name: belamine
+        groups: docker
+        append: true
+    - name: Copy the compose folder
+      copy:
+        src: /home/belamine/Desktop/Work/projects/mattermost-dpl/compose/
+        dest: /home/belamine/compose/
+        mode: preserve
+
+    - name: Start the containers
+      command: docker compose up -d
+      args:
+        chdir: /home/belamine/compose
+
+    - name: Copy the backup script
+      copy:
+        src: /home/belamine/Desktop/Work/projects/mattermost-dpl/scripts/backup.sh
+        dest: /home/belamine/backup.sh
+        mode: "0755"
+
+    - name: Create the backups folder
+      file:
+        path: /home/belamine/backups
+        state: directory
+        mode: "0755"
+
+    - name: Schedule the daily backup via cron
+      cron:
+        name: "Mattermost daily backup"
+        minute: "0"
+        hour: "2"
+        job: "/home/belamine/backup.sh"
+        user: belamine
+    
