@@ -54,7 +54,7 @@ resource "libvirt_cloudinit_disk" "controlplane_cloudinit" {
   name = "controlplane-${count.index}-cloudinit.iso"
   meta_data = yamlencode({
     instance-id = "controlplane-${count.index}"
-    local-host = "controlplane-${count.index}"
+    local-hostname = "controlplane-${count.index}"
   })
   user_data = templatefile("${path.module}/cloud-init.yaml.tftpl", {
     password_hash = var.vm_user_password_hash
@@ -171,7 +171,7 @@ resource "libvirt_cloudinit_disk" "worker_cloudinit" {
   count = 6
   name = "worker-${count.index}-cloudinit.iso"
   meta_data = yamlencode({
-    instance_id = "worker-${count.index}"
+    instance-id = "worker-${count.index}"
     local-hostname = "worker-${count.index}"
   })
   user_data = templatefile("${path.module}/cloud-init.yaml.tftpl", {
