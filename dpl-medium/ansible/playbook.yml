@@ -24,16 +24,49 @@
         name: conntrack
         state: present
     
+    - name: Load the br_netfilter kernel module
+      modprobe:
+        name: br_netfilter
+        state: present
+
+    - name: Persist br_netfilter across reboots
+      lineinfile:
+        path: /etc/modules-load.d/k8s.conf
+        line: 'br_netfilter'
+        create: true
+
     - name: enable ip forwarding
       sysctl:
         name: net.ipv4.ip_forward
         value: "1"
         sysctl_set: true
-    
+
+    - name: enable bridge-nf-call-iptables
+      sysctl:
+        name: net.bridge.bridge-nf-call-iptables
+        value: "1"
+        sysctl_set: true
+
+    - name: enable bridge-nf-call-ip6tables
+      sysctl:
+        name: net.bridge.bridge-nf-call-ip6tables
+        value: "1"
+        sysctl_set: true
+
     - name: Enable ip forwarding permanently
       lineinfile:
         path: /etc/sysctl.conf
         line: 'net.ipv4.ip_forward = 1'
+
+    - name: Enable bridge-nf-call-iptables permanently
+      lineinfile:
+        path: /etc/sysctl.conf
+        line: 'net.bridge.bridge-nf-call-iptables = 1'
+
+    - name: Enable bridge-nf-call-ip6tables permanently
+      lineinfile:
+        path: /etc/sysctl.conf
+        line: 'net.bridge.bridge-nf-call-ip6tables = 1'
     
     - name: Install k8s apt prerequisites
       apt:
@@ -127,3 +160,51 @@
       command: "{{ join_cmd }}"
       args:
         creates: /etc/kubernetes/kubelet.conf
+
+- name: Install Helm and deploy Mattermost operator
+  hosts: control_plane_init
+  become: true
+
+  tasks:
+    - name: Download the Helm install script
+      get_url:
+        url: https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3
+        dest: /tmp/get-helm-3.sh
+        mode: "0755"
+
+    - name: Install Helm
+      command: /tmp/get-helm-3.sh
+      args:
+        creates: /usr/local/bin/helm
+
+    - name: Add the Mattermost Helm repository
+      command: helm repo add mattermost https://helm.mattermost.com
+      become_user: belamine
+      changed_when: false
+
+    - name: Update Helm repositories
+      command: helm repo update
+      become_user: belamine
+      changed_when: false
+
+    - name: Copy Mattermost Helm values file
+      copy:
+        src: /home/belamine/Desktop/Work/projects/mattermost-dpl/dpl-medium/k8s/mattermost-values.yaml
+        dest: /home/belamine/mattermost-values.yaml
+        mode: "0644"
+
+    - name: Install the Mattermost operator via Helm
+      command: >
+        helm install mattermost-operator mattermost/mattermost-operator
+        -n mattermost-operator --create-namespace -f /home/belamine/mattermost-values.yaml
+      become_user: belamine
+      register: helm_result
+      failed_when: helm_result.rc != 0 and 'cannot re-use' not in helm_result.stderr
+      changed_when: helm_result.rc == 0
+
+    #Bricolage (transfère des fichers yaml k8s, execution manuelle sur le cluster)
+    - name: Copy Mattermost custom resource
+      copy:
+        src: /home/belamine/Desktop/Work/projects/mattermost-dpl/dpl-medium/k8s/mattermost-instance.yaml
+        dest: /home/belamine/mattermost-instance.yaml
+        mode: "0644"
