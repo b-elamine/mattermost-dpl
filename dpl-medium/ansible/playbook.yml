@@ -252,3 +252,93 @@
         -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"true"}}}'
       become_user: belamine
       changed_when: false
+
+- name: Install cert-manager
+  hosts: control_plane_init
+  become: true
+
+  tasks:
+    - name: Add the Jetstack Helm repository
+      command: helm repo add jetstack https://charts.jetstack.io
+      become_user: belamine
+      changed_when: false
+
+    - name: Update Helm repositories
+      command: helm repo update
+      become_user: belamine
+      changed_when: false
+
+    - name: Install cert-manager via Helm
+      command: >
+        helm install cert-manager jetstack/cert-manager
+        --namespace cert-manager --create-namespace --version v1.14.5 --set installCRDs=true
+      become_user: belamine
+      register: helm_result
+      failed_when: helm_result.rc != 0 and 'cannot re-use' not in helm_result.stderr
+      changed_when: helm_result.rc == 0
+
+- name: Install OpenSearch operator
+  hosts: control_plane_init
+  become: true
+
+  tasks:
+    - name: Add the OpenSearch operator Helm repository
+      command: helm repo add opensearch-operator https://opensearch-project.github.io/opensearch-k8s-operator/
+      become_user: belamine
+      changed_when: false
+
+    - name: Update Helm repositories
+      command: helm repo update
+      become_user: belamine
+      changed_when: false
+
+    - name: Install the OpenSearch operator via Helm
+      command: >
+        helm install opensearch-operator opensearch-operator/opensearch-operator
+        -n mattermost-operator
+      become_user: belamine
+      register: helm_result
+      failed_when: helm_result.rc != 0 and 'cannot re-use' not in helm_result.stderr
+      changed_when: helm_result.rc == 0
+
+- name: Install Mattermost Push Proxy
+  hosts: control_plane_init
+  become: true
+
+  tasks:
+    - name: Install the Mattermost Push Proxy via Helm
+      command: >
+        helm install mattermost-push-proxy mattermost/mattermost-push-proxy
+        -n mattermost-operator
+      become_user: belamine
+      register: helm_result
+      failed_when: helm_result.rc != 0 and 'cannot re-use' not in helm_result.stderr
+      changed_when: helm_result.rc == 0
+
+- name: Install Ingress Controller (HA)
+  hosts: control_plane_init
+  become: true
+
+  tasks:
+    - name: Add the ingress-nginx Helm repository
+      command: helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
+      become_user: belamine
+      changed_when: false
+
+    - name: Update Helm repositories
+      command: helm repo update
+      become_user: belamine
+      changed_when: false
+
+    - name: Install ingress-nginx via Helm
+      command: >
+        helm install ingress-nginx ingress-nginx/ingress-nginx
+        -n ingress-nginx --create-namespace
+        --set controller.replicaCount=2
+        --set controller.service.type=NodePort
+        --set controller.service.nodePorts.http=30080
+        --set controller.service.nodePorts.https=30443
+      become_user: belamine
+      register: helm_result
+      failed_when: helm_result.rc != 0 and 'cannot re-use' not in helm_result.stderr
+      changed_when: helm_result.rc == 0

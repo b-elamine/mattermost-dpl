@@ -6,7 +6,9 @@ metadata:
 spec:
   replicas: 4
   ingress:
-    enabled: false
+    enabled: true
+    host: mattermost.local
+    tlsSecret: mattermost-tls
   database:
     external:
       secret: mattermost-db-connection
@@ -15,3 +17,11 @@ spec:
       url: minio:9000
       bucket: mattermost
       secret: mattermost-filestore-connection
+  # OpenSearch (k8s/opensearch-cluster.yaml) tourne mais n'est pas branché ici :
+  # fonction "Enterprise search" désactivée sans licence Mattermost. Recherche
+  # par défaut (Postgres) utilisée à la place. Voir NOTES.md.
+  mattermostEnv:
+    - name: MM_EMAILSETTINGS_PUSHNOTIFICATIONSERVER
+      value: "http://mattermost-push-proxy:8066"
+    - name: MM_EMAILSETTINGS_SENDPUSHNOTIFICATIONS
+      value: "true"

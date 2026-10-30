@@ -1,0 +1,29 @@
+apiVersion: opensearch.org/v1
+kind: OpenSearchCluster
+metadata:
+  name: mattermost-opensearch
+  namespace: mattermost-operator
+spec:
+  general:
+    serviceName: mattermost-opensearch
+    version: "2.11.0"
+  security:
+    tls:
+      transport:
+        generate: true
+      http:
+        generate: true
+  nodePools:
+    - component: nodes
+      replicas: 3
+      diskSize: "5Gi"
+      resources:
+        requests:
+          memory: "1Gi"
+          cpu: "250m"
+        limits:
+          memory: "1Gi"
+          cpu: "500m"
+      roles:
+        - "master"
+        - "data"
