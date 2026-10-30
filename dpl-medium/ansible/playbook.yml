@@ -208,3 +208,47 @@
         src: /home/belamine/Desktop/Work/projects/mattermost-dpl/dpl-medium/k8s/mattermost-instance.yaml
         dest: /home/belamine/mattermost-instance.yaml
         mode: "0644"
+
+- name: Install Zalando Postgres operator
+  hosts: control_plane_init
+  become: true
+
+  tasks:
+    - name: Add the Zalando postgres-operator Helm repository
+      command: helm repo add postgres-operator-charts https://opensource.zalando.com/postgres-operator/charts/postgres-operator
+      become_user: belamine
+      changed_when: false
+
+    - name: Update Helm repositories
+      command: helm repo update
+      become_user: belamine
+      changed_when: false
+
+    - name: Install the Zalando postgres-operator via Helm
+      command: >
+        helm install postgres-operator postgres-operator-charts/postgres-operator
+        -n mattermost-operator
+      become_user: belamine
+      register: helm_result
+      failed_when: helm_result.rc != 0 and 'cannot re-use' not in helm_result.stderr
+      changed_when: helm_result.rc == 0
+
+- name: Install local storage provisioner
+  hosts: control_plane_init
+  become: true
+
+  tasks:
+    - name: Apply the local-path-provisioner manifest
+      command: >
+        kubectl --kubeconfig=/home/belamine/.kube/config apply -f
+        https://raw.githubusercontent.com/rancher/local-path-provisioner/v0.0.30/deploy/local-path-storage.yaml
+      become_user: belamine
+      register: apply_result
+      changed_when: "'unchanged' not in apply_result.stdout"
+
+    - name: Set local-path as the default StorageClass
+      command: >
+        kubectl --kubeconfig=/home/belamine/.kube/config patch storageclass local-path
+        -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"true"}}}'
+      become_user: belamine
+      changed_when: false

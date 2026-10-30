@@ -1,0 +1,18 @@
+apiVersion: "acid.zalan.do/v1"
+kind: postgresql
+metadata:
+  name: mattermost-postgres
+  namespace: mattermost-operator
+spec:
+  teamId: "mattermost"
+  numberOfInstances: 3
+  volume:
+    size: 5Gi
+  users:
+    mmuser:
+      - superuser
+      - createdb
+  databases:
+    mattermost: mmuser
+  postgresql:
+    version: "15"

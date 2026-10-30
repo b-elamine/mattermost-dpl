@@ -9,3 +9,4 @@ compose/cert/
 privkey.pem
 PLAN.md
 dpl-medium/NOTES.md
+dpl-medium/k8s/*-secret.yaml

@@ -4,6 +4,14 @@ metadata:
   name: mattermost
   namespace: mattermost-operator
 spec:
-  replicas: 1 
+  replicas: 4
   ingress:
     enabled: false
+  database:
+    external:
+      secret: mattermost-db-connection
+  fileStore:
+    external:
+      url: minio:9000
+      bucket: mattermost
+      secret: mattermost-filestore-connection

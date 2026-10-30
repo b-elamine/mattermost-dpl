@@ -1,0 +1,39 @@
+# TEMPORAIRE - Postgres simple, pour tester avant le vrai cluster Zalando (étape 13).
+# Remplacé par postgres-cluster.yaml (opérateur Zalando, 1 primary + 2 replicas).
+# À supprimer une fois Mattermost migré vers le nouveau cluster, pas avant.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres
+  namespace: mattermost-operator
+spec:
+  replicas: 1
+  selector:
+    matchLabels: 
+      app: postgres
+  template: 
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:15
+          envFrom:
+            - secretRef:
+                name: postgres-credentials
+          ports: 
+            - containerPort: 5432
+
+--- 
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+  namespace: mattermost-operator
+spec:
+  selector:
+    app: postgres
+  ports: 
+    - port: 5432

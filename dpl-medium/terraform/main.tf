@@ -87,6 +87,9 @@ resource "libvirt_domain" "controlplane" {
   memory_unit = "MiB"
   vcpu        = 2
   type        = "kvm"
+  cpu = {
+    mode = "host-passthrough"
+  }
   running     = true
 
   os = {
@@ -205,6 +208,9 @@ resource "libvirt_domain" "worker" {
   memory_unit = "MiB"
   vcpu        = 2
   type        = "kvm"
+  cpu = {
+    mode = "host-passthrough"
+  }
   running     = true
 
   os = {
